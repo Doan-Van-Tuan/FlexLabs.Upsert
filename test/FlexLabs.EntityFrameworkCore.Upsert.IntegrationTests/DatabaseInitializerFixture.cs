@@ -20,7 +20,7 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests
         private static readonly string ConnString_InMemory = "Upsert_TestDbContext_Tests";
         private static readonly string ConnString_Sqlite = $"Data Source={Username}.db";
 
-        private static readonly string ConnString_Postgres_GitHub = $"Server=localhost;Port=5432;Database={Username};Username=postgres;Password=root";
+        private static readonly string ConnString_Postgres_GitHub = $"Server=localhost;Port=5432;Database={Username};Username=postgres;Password=mysecretpassword";
 
         private static readonly string ConnString_Postgres_Docker = $"Server=localhost;Port=25432;Database={Username};Username={Username};Password={Password}";
         private static readonly string ConnString_MySql_Docker = $"Server=localhost;Port=23306;Database={Username};Uid=root;Pwd={Password}";
@@ -47,7 +47,7 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests
                 DbDriver.Sqlite => ConnString_Sqlite,
                 DbDriver.Postgres when BuildEnvironment.IsAppVeyor => ConnString_Postgres_AppVeyor,
                 DbDriver.Postgres when BuildEnvironment.IsGitHub && BuildEnvironment.IsGitHubLocalPostgres => ConnString_Postgres_GitHub,
-                DbDriver.Postgres => ConnString_Postgres_Docker,
+                DbDriver.Postgres => ConnString_Postgres_GitHub,
                 DbDriver.MySQL when BuildEnvironment.IsAppVeyor => ConnString_MySql_AppVeyor,
                 DbDriver.MySQL => ConnString_MySql_Docker,
                 DbDriver.MSSQL when BuildEnvironment.IsAppVeyor => ConnString_SqlServer_AppVeyor,

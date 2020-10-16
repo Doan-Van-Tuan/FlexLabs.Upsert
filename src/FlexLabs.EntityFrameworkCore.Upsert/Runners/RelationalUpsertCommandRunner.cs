@@ -11,6 +11,7 @@ using FlexLabs.EntityFrameworkCore.Upsert.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace FlexLabs.EntityFrameworkCore.Upsert.Runners
@@ -102,7 +103,13 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Runners
             var joinColumns = ProcessMatchExpression(entityType, match, queryOptions);
             var joinColumnNames = joinColumns.Select(c => (ColumnName: c.GetColumnBaseName(), c.IsColumnNullable())).ToArray();
 
+            // Find all properties of Owned Entities
+            var propertiesFromNavigation = entityType.GetNavigations()
+                .Where(x => x.ForeignKey.IsOwnership)
+                .SelectMany(x => x.GetTargetType().GetProperties().Where(x => !x.IsShadowProperty()));
+
             var properties = entityType.GetProperties()
+                .Union(propertiesFromNavigation) // Merge regular-properties with OwnedEntity properties
                 .Where(p => queryOptions.AllowIdentityMatch || p.ValueGenerated == ValueGenerated.Never || p.GetAfterSaveBehavior() == PropertySaveBehavior.Save)
                 .Where(p => p.GetAnnotations()
                     .FirstOrDefault(a => a.Name == "Npgsql:ValueGenerationStrategy")
@@ -121,7 +128,34 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Runners
                 {
                     var property = entityType.FindProperty(binding.Member.Name);
                     if (property == null)
-                        throw new InvalidOperationException("Unknown property " + binding.Member.Name);
+                    {
+                        var navigation = entityType.FindNavigation(binding.Member.Name);
+                        if (navigation != null && navigation.ForeignKey.IsOwnership && binding.Expression is MemberInitExpression navigationUpdater)
+                        {
+                            foreach (MemberAssignment navigationBinding in navigationUpdater.Bindings)
+                            {
+                                var navigationProperty = navigation.GetTargetType().FindProperty(navigationBinding.Member.Name);
+                                if (navigationProperty == null)
+                                {
+                                    throw new InvalidOperationException("Unknown navigation-property " + binding.Member.Name);
+                                }
+
+                                // TODO: Support navigation property expressions! (currently only allows direct values)
+                                var navigationValue = navigationBinding.Expression.GetValue<TEntity>(updater, navigation.GetTargetType().FindProperty, queryOptions.UseExpressionCompiler);
+                                if (!(navigationValue is IKnownValue knownNavigationVal))
+                                    knownNavigationVal = new ConstantValue(navigationValue, property);
+
+                                updateExpressions.Add((navigationProperty, knownNavigationVal));
+                            }
+
+                            // Skip further statements, continue with next
+                            continue;
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException("Unknown property " + binding.Member.Name);
+                        }
+                    }
 
                     var value = binding.Expression.GetValue<TEntity>(updater, entityType.FindProperty, queryOptions.UseExpressionCompiler);
                     if (value is not IKnownValue knownVal)
@@ -157,7 +191,16 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Runners
                     .Select(p =>
                     {
                         var columnName = p.GetColumnBaseName();
-                        var rawValue = p.PropertyInfo?.GetValue(e);
+                        object rawValue;
+                        if (p.DeclaringEntityType == entityType)
+                        {
+	                        rawValue = p.PropertyInfo?.GetValue(e);
+                        }
+                        else
+                        {
+                            var navigation = entityType.GetNavigations().Single(x => x.ForeignKey.IsOwnership && x.GetTargetType().GetProperties().Contains(p));
+                            rawValue = p.PropertyInfo.GetValue(navigation.PropertyInfo.GetValue(e));
+                        }
                         string? defaultSql = null;
                         if (rawValue == null)
                         {
