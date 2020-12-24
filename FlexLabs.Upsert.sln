@@ -27,6 +27,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlexLabs.EntityFrameworkCor
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests", "test\FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests\FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests.csproj", "{2A61A416-2EFA-4199-9958-2817B947E5E0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexLabs.EntityFrameworkCore5.Upsert.Tests", "test\FlexLabs.EntityFrameworkCore5.Upsert.Tests\FlexLabs.EntityFrameworkCore5.Upsert.Tests.csproj", "{E37580DC-CA49-495A-94CA-A0800339A1FD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{2A61A416-2EFA-4199-9958-2817B947E5E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2A61A416-2EFA-4199-9958-2817B947E5E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2A61A416-2EFA-4199-9958-2817B947E5E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E37580DC-CA49-495A-94CA-A0800339A1FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E37580DC-CA49-495A-94CA-A0800339A1FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E37580DC-CA49-495A-94CA-A0800339A1FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E37580DC-CA49-495A-94CA-A0800339A1FD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -54,6 +60,7 @@ Global
 		{E00DD739-30D8-4FE0-BFD4-99378BD4AD5F} = {0DCBBEBD-A5B9-46F1-B9DE-F469447630F1}
 		{DED725C1-78D6-4060-BC6D-72B6DF164E73} = {27DD4B6C-174D-436C-84F4-8706DF282194}
 		{2A61A416-2EFA-4199-9958-2817B947E5E0} = {27DD4B6C-174D-436C-84F4-8706DF282194}
+		{E37580DC-CA49-495A-94CA-A0800339A1FD} = {27DD4B6C-174D-436C-84F4-8706DF282194}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AF1562DF-BA49-4D28-A977-6C5A9B8C4F9D}
