@@ -14,8 +14,9 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests
         docker run --name flexlabs_upsert_test_mssql -e ACCEPT_EULA=Y -e SA_PASSWORD=Password12! -p 21433:1433 -d mcr.microsoft.com/mssql/server
         */
 
+        private const string LocalHostname = "localhost";
         private const string Username = "testuser";
-        private const string Password = "Password12!";
+        private const string Password = "mysecretpassword";
 
         private static readonly string ConnString_InMemory = "Upsert_TestDbContext_Tests";
         private static readonly string ConnString_Sqlite = $"Data Source={Username}.db";

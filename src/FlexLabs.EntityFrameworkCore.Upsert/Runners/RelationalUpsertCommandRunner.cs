@@ -198,6 +198,7 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Runners
                         }
                         else
                         {
+                            // Sub-entity so an owned-entity
                             var navigation = entityType.GetNavigations().Single(x => x.ForeignKey.IsOwnership && x.GetTargetType().GetProperties().Contains(p));
                             rawValue = p.PropertyInfo.GetValue(navigation.PropertyInfo.GetValue(e));
                         }
