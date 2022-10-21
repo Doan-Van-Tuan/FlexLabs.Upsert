@@ -18,21 +18,22 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Tests.Runners
     public abstract class RelationalCommandRunnerTestsBase<TRunner>
         where TRunner : RelationalUpsertCommandRunner
     {
-        private readonly DbContext _dbContext;
-        private readonly IRawSqlCommandBuilder _rawSqlBuilder;
+        protected readonly DbContext _dbContext;
+        protected readonly IRawSqlCommandBuilder _rawSqlBuilder;
+        protected Model _model;
 
         public RelationalCommandRunnerTestsBase(string providerName)
         {
-            var model = new Model();
-            AddEntity<TestEntity>(model);
-            AddEntity<TestEntityWithNullableKey>(model);
+            _model = new Model();
+            AddEntity<TestEntity>(_model);
+            AddEntity<TestEntityWithNullableKey>(_model);
 
             var dbProvider = Substitute.For<IDatabaseProvider>();
             dbProvider.Name.Returns(providerName);
 
             var services = new ServiceCollection();
             services.AddSingleton<IUpsertCommandRunner, TRunner>();
-            services.AddSingleton<IModel>(model);
+            services.AddSingleton<IModel>(_model);
             services.AddSingleton(dbProvider);
             services.AddSingleton(Substitute.For<IRelationalTypeMappingSource>());
             var serviceProvider = services.BuildServiceProvider();
@@ -48,10 +49,8 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Tests.Runners
                 new RawSqlCommand(Substitute.For<IRelationalCommand>(), new Dictionary<string, object>()));
 
             var concurrencyDetector = Substitute.For<IConcurrencyDetector>();
-#if NET5_0
             var disposer = new ConcurrencyDetectorCriticalSectionDisposer(concurrencyDetector);
             concurrencyDetector.EnterCriticalSection().Returns(disposer);
-#endif
 
             var dependencies = Substitute.For<IRelationalDatabaseFacadeDependencies>();
             dependencies.RelationalConnection.Returns(relationalConnection);
@@ -64,15 +63,23 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Tests.Runners
             _dbContext.Database.Returns(dbFacade);
         }
 
-        private static void AddEntity<TEntity>(Model model)
+        protected static EntityType AddEntity<TEntity>(Model model)
         {
             var clrType = typeof(TEntity);
+#if NET6_0_OR_GREATER
+            var entityType = model.AddEntityType(clrType, true, ConfigurationSource.Convention);
+#else
             var entityType = model.AddEntityType(clrType, ConfigurationSource.Convention);
+#endif
             foreach (var property in clrType.GetProperties())
             {
-                entityType.AddProperty(property.Name);
+                entityType.AddProperty(property.Name, ConfigurationSource.Explicit);
             }
-            entityType.AddKey(entityType.GetProperty("ID") as Property, ConfigurationSource.Convention);
+            var idProperty = entityType.FindProperty("ID");
+            if (idProperty == null)
+                throw new InvalidOperationException("ID property missing on entity " + typeof(TEntity).Name);
+            entityType.AddKey(idProperty, ConfigurationSource.Convention);
+            return entityType;
         }
 
         protected abstract string NoUpdate_Sql { get; }
@@ -241,6 +248,24 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Tests.Runners
 
             _rawSqlBuilder.Received().Build(
                 Update_Condition_Sql,
+                Arg.Any<IEnumerable<object>>());
+        }
+
+        protected abstract string Update_Condition_UpdateConditionColumn_Sql { get; }
+        [Fact]
+        public void SqlSyntaxRunner_Update_Condition_UpdateConditionColumn()
+        {
+            _dbContext.Upsert(new TestEntity())
+                .WhenMatched(e => new TestEntity
+                {
+                    Name = "new",
+                    Total = e.Total + 1
+                })
+                .UpdateIf(e => e.Total > 5)
+                .Run();
+
+            _rawSqlBuilder.Received().Build(
+                Update_Condition_UpdateConditionColumn_Sql,
                 Arg.Any<IEnumerable<object>>());
         }
 

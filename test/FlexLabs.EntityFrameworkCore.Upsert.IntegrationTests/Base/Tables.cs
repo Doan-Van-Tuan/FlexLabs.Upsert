@@ -38,6 +38,13 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests.Base
         [Key, DatabaseGenerated(DatabaseGeneratedOption.None)]
         public int ID { get; set; }
         public string Data { get; set; }
+        public ChildObject Child { get; set; }
+    }
+
+    public class ChildObject
+    {
+        public string Value { get; set; }
+        public DateTimeOffset Time { get; set; }
     }
 
     public class JObjectData
@@ -136,6 +143,21 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests.Base
         public string Text { get; set; }
     }
 
+    public class GeneratedAlwaysAsIdentity
+    {
+        public int ID { get; set; }
+        public int Num1 { get; set; }
+        public int Num2 { get; set; }
+    }
+
+    public class ComputedColumn
+    {
+        public int ID { get; set; }
+        public int Num1 { get; set; }
+        public int Num2 { get; set; }
+        public int Num3 { get; set; }
+    }
+
     public class Parent
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.None)]
@@ -151,4 +173,5 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests.Base
         [Required]
         public string ChildName { get; set; }
     }
+
 }

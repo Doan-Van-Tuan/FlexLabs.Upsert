@@ -9,8 +9,8 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests
     public abstract class DatabaseInitializerFixture
     {
         /* Docker commands for the test containers
-        docker run --name flexlabs_upsert_test_postgres -e POSTGRES_USER=testuser -e POSTGRES_PASSWORD=Password12! -e POSTGRES_DB=testuser -p 25432:5432 postgres:alpine
-        docker run --name flexlabs_upsert_test_mysql -e MYSQL_ROOT_PASSWORD=Password12! -e MYSQL_USER=testuser -e MYSQL_PASSWORD=Password12! -e MYSQL_DATABASE=testuser -p 23306:3306 mysql
+        docker run --name flexlabs_upsert_test_postgres -e POSTGRES_USER=testuser -e POSTGRES_PASSWORD=Password12! -e POSTGRES_DB=testuser -p 25432:5432 -d postgres:alpine
+        docker run --name flexlabs_upsert_test_mysql -e MYSQL_ROOT_PASSWORD=Password12! -e MYSQL_USER=testuser -e MYSQL_PASSWORD=Password12! -e MYSQL_DATABASE=testuser -p 23306:3306 -d mysql
         docker run --name flexlabs_upsert_test_mssql -e ACCEPT_EULA=Y -e SA_PASSWORD=Password12! -p 21433:1433 -d mcr.microsoft.com/mssql/server
         */
 
@@ -54,13 +54,13 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests
             {
                 DbDriver.InMemory => ConnString_InMemory,
                 DbDriver.Sqlite => ConnString_Sqlite,
-                DbDriver.Postgres when IsAppVeyor => ConnString_Postgres_AppVeyor,
-                DbDriver.Postgres when IsGitHub && IsGitHubLocalPostgres => ConnString_Postgres_GitHub,
+                DbDriver.Postgres when BuildEnvironment.IsAppVeyor => ConnString_Postgres_AppVeyor,
+                DbDriver.Postgres when BuildEnvironment.IsGitHub && BuildEnvironment.IsGitHubLocalPostgres => ConnString_Postgres_GitHub,
                 DbDriver.Postgres => ConnString_Postgres_Docker,
-                DbDriver.MySQL when IsAppVeyor => ConnString_MySql_AppVeyor,
+                DbDriver.MySQL when BuildEnvironment.IsAppVeyor => ConnString_MySql_AppVeyor,
                 DbDriver.MySQL => ConnString_MySql_Docker,
-                DbDriver.MSSQL when IsAppVeyor => ConnString_SqlServer_AppVeyor,
-                DbDriver.MSSQL when IsGitHub || Environment.OSVersion.Platform != PlatformID.Win32NT => ConnString_SqlServer_Docker,
+                DbDriver.MSSQL when BuildEnvironment.IsAppVeyor => ConnString_SqlServer_AppVeyor,
+                DbDriver.MSSQL when BuildEnvironment.IsGitHub || Environment.OSVersion.Platform != PlatformID.Win32NT => ConnString_SqlServer_Docker,
                 DbDriver.MSSQL => ConnString_SqlServer_LocalDb,
                 _ => throw new ArgumentException("Can't get a connection string for driver " + driver)
             };
@@ -101,11 +101,7 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests
                     options.UseSqlServer(connectionString);
                     break;
                 case DbDriver.MySQL:
-#if NET5_0
                     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-#else
-                    options.UseMySql(connectionString);
-#endif
                     break;
                 case DbDriver.InMemory:
                     options.UseInMemoryDatabase(connectionString);
