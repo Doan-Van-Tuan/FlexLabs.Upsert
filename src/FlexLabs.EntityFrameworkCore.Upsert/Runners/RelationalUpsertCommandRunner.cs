@@ -11,6 +11,7 @@ using FlexLabs.EntityFrameworkCore.Upsert.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace FlexLabs.EntityFrameworkCore.Upsert.Runners
@@ -100,7 +101,7 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Runners
             RunnerQueryOptions queryOptions)
         {
             var joinColumns = ProcessMatchExpression(entityType, match, queryOptions);
-            var joinColumnNames = joinColumns.Select(c => (ColumnName: c.GetColumnBaseName(), c.IsColumnNullable())).ToArray();
+            var joinColumnNames = joinColumns.Select(c => (ColumnName: c.GetColumnName(), c.IsColumnNullable())).ToArray();
 
             // Find all properties of Owned Entities
             var propertiesFromNavigation = entityType.GetNavigations()
@@ -133,14 +134,14 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Runners
                         {
                             foreach (MemberAssignment navigationBinding in navigationUpdater.Bindings)
                             {
-                                var navigationProperty = navigation.TargetEntityType.FindProperty(navigationBinding.Member.Name);
+                                var navigationProperty = navigation.GetTargetType().FindProperty(navigationBinding.Member.Name);
                                 if (navigationProperty == null)
                                 {
                                     throw new InvalidOperationException("Unknown navigation-property " + binding.Member.Name);
                                 }
 
                                 // TODO: Support navigation property expressions! (currently only allows direct values)
-                                var navigationValue = navigationBinding.Expression.GetValue<TEntity>(updater, navigation.TargetEntityType.FindProperty, queryOptions.UseExpressionCompiler);
+                                var navigationValue = navigationBinding.Expression.GetValue<TEntity>(updater, navigation.GetTargetType().FindProperty, queryOptions.UseExpressionCompiler);
                                 if (!(navigationValue is IKnownValue knownNavigationVal))
                                     knownNavigationVal = new ConstantValue(navigationValue, property);
 
@@ -168,7 +169,7 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Runners
                 updateExpressions = new List<(IProperty Property, IKnownValue Value)>();
                 foreach (var property in properties)
                 {
-                    if (joinColumnNames.Any(c => c.ColumnName == property.GetColumnBaseName()))
+                    if (joinColumnNames.Any(c => c.ColumnName == property.GetColumnName()))
                         continue;
 
                     var propertyAccess = new PropertyValue(property.Name, false, property);
@@ -189,25 +190,23 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Runners
                 .Select(e => properties
                     .Select(p =>
                     {
-                        var columnName = p.GetColumnBaseName();
+                        var columnName = p.GetColumnName();
                         object rawValue;
                         if (p.DeclaringEntityType == entityType)
                         {
-                            rawValue = p.PropertyInfo?.GetValue(e);
+	                        rawValue = p.PropertyInfo?.GetValue(e);
                         }
                         else
                         {
                             // Sub-entity so an owned-entity
-                            var navigation = entityType.GetNavigations().Single(x => x.ForeignKey.IsOwnership && x.TargetEntityType.GetProperties().Contains(p));
-                            rawValue = p.PropertyInfo.GetValue(navigation.PropertyInfo.GetValue(e));
+                            var navigation = entityType.GetNavigations().Single(x => x.ForeignKey.IsOwnership && x.GetTargetType().GetProperties().Contains(p));
+                            var ownedObject = navigation.PropertyInfo.GetValue(e);
+                            rawValue = ownedObject == null ? null : p.PropertyInfo.GetValue(ownedObject);
                         }
                         string? defaultSql = null;
                         if (rawValue == null)
                         {
-                            if (p.GetDefaultValue() != null)
-                                rawValue = p.GetDefaultValue();
-                            else
-                                defaultSql = p.GetDefaultValueSql();
+                            defaultSql = p.GetDefaultValueSql();
                         }
                         var value = new ConstantValue(rawValue, p);
                         var allowInserts = p.ValueGenerated == ValueGenerated.Never || p.GetAfterSaveBehavior() == PropertySaveBehavior.Save;
@@ -245,7 +244,7 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Runners
                     arg.ArgumentIndex = i++;
 
                 var columnUpdateExpressions = updateExpressions?.Count > 0
-                    ? updateExpressions.Select(x => (x.Property.GetColumnBaseName(), x.Value)).ToArray()
+                    ? updateExpressions.Select(x => (x.Property.GetColumnName(), x.Value)).ToArray()
                     : null;
                 var sqlCommand = GenerateCommand(GetTableName(entityType), newEntities.Skip(entitiesProcessed - entitiesHere).Take(entitiesHere).ToArray(), joinColumnNames, columnUpdateExpressions, updateConditionExpression);
                 yield return (sqlCommand, arguments);
@@ -263,7 +262,7 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Runners
             switch (value)
             {
                 case PropertyValue prop:
-                    var columnName = prop.Property.GetColumnBaseName();
+                    var columnName = prop.Property.GetColumnName();
                     if (expandLeftColumn != null && prop.IsLeftParameter)
                         return expandLeftColumn(columnName);
 
