@@ -80,6 +80,7 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests.Base
         public DbSet<StringKey> StringKeys { get; set; }
         public DbSet<StringKeyAutoGen> StringKeysAutoGen { get; set; }
         public DbSet<TestEntity> TestEntities { get; set; }
+        public DbSet<Parent> Parents { get; set; }
         public DbSet<GeneratedAlwaysAsIdentity> GeneratedAlwaysAsIdentity { get; set; }
         public DbSet<ComputedColumn> ComputedColumns { get; set; }
         public DbSet<Parent> Parents { get; set; }

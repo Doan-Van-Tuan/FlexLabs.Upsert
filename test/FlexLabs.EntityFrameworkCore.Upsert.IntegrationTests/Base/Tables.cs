@@ -173,5 +173,4 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests.Base
         [Required]
         public string ChildName { get; set; }
     }
-
 }
