@@ -200,15 +200,13 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.Runners
                         {
                             // Sub-entity so an owned-entity
                             var navigation = entityType.GetNavigations().Single(x => x.ForeignKey.IsOwnership && x.GetTargetType().GetProperties().Contains(p));
-                            rawValue = p.PropertyInfo.GetValue(navigation.PropertyInfo.GetValue(e));
+                            var ownedObject = navigation.PropertyInfo.GetValue(e);
+                            rawValue = ownedObject == null ? null : p.PropertyInfo.GetValue(ownedObject);
                         }
                         string? defaultSql = null;
                         if (rawValue == null)
                         {
-                            if (p.GetDefaultValue() != null)
-                                rawValue = p.GetDefaultValue();
-                            else
-                                defaultSql = p.GetDefaultValueSql();
+                            defaultSql = p.GetDefaultValueSql();
                         }
                         var value = new ConstantValue(rawValue, p);
                         var allowInserts = p.ValueGenerated == ValueGenerated.Never || p.GetAfterSaveBehavior() == PropertySaveBehavior.Save;

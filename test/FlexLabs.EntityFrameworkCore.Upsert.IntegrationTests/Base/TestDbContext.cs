@@ -83,5 +83,6 @@ namespace FlexLabs.EntityFrameworkCore.Upsert.IntegrationTests.Base
         public DbSet<Parent> Parents { get; set; }
         public DbSet<GeneratedAlwaysAsIdentity> GeneratedAlwaysAsIdentity { get; set; }
         public DbSet<ComputedColumn> ComputedColumns { get; set; }
+        public DbSet<Parent> Parents { get; set; }
     }
 }
